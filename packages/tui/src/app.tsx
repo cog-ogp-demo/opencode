@@ -66,6 +66,8 @@ import { createTuiApiAdapters } from "./plugin/adapters"
 import { createTuiApi } from "./plugin/api"
 import { createPluginRuntime, PluginRuntimeProvider, usePluginRuntime, type TuiPluginHost } from "./plugin/runtime"
 import { CommandPaletteDialog } from "./component/command-palette"
+import { Pets } from "./component/pets"
+import { Pacman } from "./component/pacman"
 import {
   COMMAND_PALETTE_COMMAND,
   OPENCODE_BASE_MODE,
@@ -562,6 +564,15 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
         slashAliases: ["resume", "continue"],
         run: () => {
           dialog.replace(() => <DialogSessionList />)
+        },
+      },
+      {
+        name: "game.pacman",
+        title: "Play Pac-Man",
+        category: "Fun",
+        slashName: "pacman",
+        run: () => {
+          dialog.replace(() => <Pacman onExit={() => dialog.clear()} />)
         },
       },
       {
@@ -1092,6 +1103,9 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
           <pluginRuntime.Slot name="app_bottom" />
         </box>
         <pluginRuntime.Slot name="app" />
+        <Show when={!Flag.OPENCODE_DISABLE_PETS}>
+          <Pets />
+        </Show>
       </Show>
       <Show when={!startup.skipInitialLoading}>
         <StartupLoading ready={ready} />

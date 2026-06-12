@@ -33,6 +33,7 @@ export interface Settings {
     editToolPartsExpanded: boolean
     showSessionProgressBar: boolean
     showCustomAgents: boolean
+    showPets: boolean
     newLayoutDesigns?: boolean
   }
   appearance: {
@@ -118,6 +119,7 @@ const defaultSettings: Settings = {
     editToolPartsExpanded: false,
     showSessionProgressBar: true,
     showCustomAgents: false,
+    showPets: true,
   },
   appearance: {
     fontSize: 14,
@@ -238,6 +240,10 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         showCustomAgents: withFallback(() => store.general?.showCustomAgents, defaultSettings.general.showCustomAgents),
         setShowCustomAgents(value: boolean) {
           setStore("general", "showCustomAgents", value)
+        },
+        showPets: withFallback(() => store.general?.showPets, defaultSettings.general.showPets),
+        setShowPets(value: boolean) {
+          setStore("general", "showPets", value)
         },
         newLayoutDesigns: withFallback(() => store.general?.newLayoutDesigns, newLayoutDesignsDefault),
         setNewLayoutDesigns(value: boolean) {

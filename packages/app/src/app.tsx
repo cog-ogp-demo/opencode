@@ -50,6 +50,7 @@ import DirectoryLayout, { DirectoryDataProvider } from "@/pages/directory-layout
 import Layout from "@/pages/layout"
 import { ErrorPage } from "./pages/error"
 import { useCheckServerHealth } from "./utils/server-health"
+import { Pets } from "@/components/pets"
 
 const HomeRoute = lazy(() => import("@/pages/home"))
 const Session = lazy(() => import("@/pages/session"))
@@ -188,6 +189,7 @@ function AppShellProviders(props: ParentProps) {
           </NotificationProvider>
         </LayoutProvider>
       </PermissionProvider>
+      <Pets />
     </SettingsProvider>
   )
 }
