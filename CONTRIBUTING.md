@@ -119,7 +119,17 @@ To test UI changes during development:
 bun run --cwd packages/app dev
 ```
 
-This starts a local dev server at http://localhost:5173 (or similar port shown in output). Most UI changes can be tested here, but the server must be running for full functionality.
+This starts a local Vite dev server at http://localhost:3000 with hot-reload. The server must be running on port 4096 for API calls to work.
+
+### Running the Documentation Site
+
+The documentation and marketing site lives in `packages/web` (Astro + Starlight):
+
+```bash
+bun run --cwd packages/web dev
+```
+
+This starts a local Astro dev server at http://localhost:4321/docs.
 
 ### Running the Desktop App
 
