@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import {
   createPromptHistory,
+  isCostCommand,
   isExitCommand,
   isNewCommand,
   movePromptHistory,
@@ -97,5 +98,12 @@ describe("run prompt shared", () => {
     expect(isNewCommand("/new")).toBe(true)
     expect(isNewCommand(" /NEW ")).toBe(true)
     expect(isNewCommand("/new now")).toBe(false)
+  })
+
+  test("recognizes the cost command", () => {
+    expect(isCostCommand("/cost")).toBe(true)
+    expect(isCostCommand(" /COST ")).toBe(true)
+    expect(isCostCommand("/cost extra")).toBe(false)
+    expect(isCostCommand("/costs")).toBe(false)
   })
 })

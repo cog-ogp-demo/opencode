@@ -14,6 +14,7 @@
 //   4. runs the prompt queue until the footer closes.
 import { createOpencodeClient } from "@opencode-ai/sdk/v2"
 import { Flag } from "@opencode-ai/core/flag/flag"
+import * as Locale from "@/util/locale"
 import { MessageID } from "@/session/schema"
 import { createRunDemo } from "./demo"
 import { resolveModelInfo, resolveRunTuiConfig, resolveSessionInfo } from "./runtime.boot"
@@ -154,6 +155,39 @@ function variantsFor(providers: RunProvider[], model: RunInput["model"]) {
 
 const RESIZE_DELAY = 250
 const LOCAL_REPLAY_ROW_LIMIT = 100
+const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
+
+function formatSessionCost(info: {
+  tokens?: {
+    input?: number
+    output?: number
+    reasoning?: number
+    cache?: { read?: number; write?: number }
+  }
+  cost?: number
+}): string {
+  const lines: string[] = []
+  const t = info.tokens
+  if (t) {
+    const input = t.input ?? 0
+    const output = t.output ?? 0
+    const reasoning = t.reasoning ?? 0
+    const cacheRead = t.cache?.read ?? 0
+    const cacheWrite = t.cache?.write ?? 0
+    const total = input + output + reasoning + cacheRead + cacheWrite
+    lines.push(`tokens  ${Locale.number(total)}`)
+    lines.push(`  input      ${Locale.number(input)}`)
+    lines.push(`  output     ${Locale.number(output)}`)
+    if (reasoning > 0) lines.push(`  reasoning  ${Locale.number(reasoning)}`)
+    if (cacheRead > 0) lines.push(`  cache read  ${Locale.number(cacheRead)}`)
+    if (cacheWrite > 0) lines.push(`  cache write ${Locale.number(cacheWrite)}`)
+  }
+  if (typeof info.cost === "number" && info.cost > 0) {
+    lines.push(`cost    ${money.format(info.cost)}`)
+  }
+
+  return lines.length > 0 ? lines.join("\n") : "no usage data"
+}
 
 async function resolveExitTitle(
   ctx: BootContext,
@@ -556,6 +590,46 @@ async function runInteractiveRuntime(input: RunRuntimeInput, deps: RunRuntimeDep
             phase: "start",
             source: "system",
             messageID: prompt.messageID,
+          })
+        }
+      },
+      onCost: async () => {
+        if (!hasSession(input, state)) {
+          footer.append({
+            kind: "system",
+            text: "no active session",
+            phase: "final",
+            source: "system",
+          })
+          return
+        }
+
+        try {
+          const info = await ctx.sdk.session
+            .get({ sessionID: state.sessionID })
+            .then((x) => x.data)
+          if (!info) {
+            footer.append({
+              kind: "system",
+              text: "session not found",
+              phase: "final",
+              source: "system",
+            })
+            return
+          }
+
+          footer.append({
+            kind: "system",
+            text: formatSessionCost(info),
+            phase: "final",
+            source: "system",
+          })
+        } catch {
+          footer.append({
+            kind: "system",
+            text: "failed to fetch session cost",
+            phase: "final",
+            source: "system",
           })
         }
       },
