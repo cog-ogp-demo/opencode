@@ -10,7 +10,7 @@
 // Resolves when the footer closes and all in-flight work finishes.
 import * as Locale from "@/util/locale"
 import { MessageID, PartID } from "@/session/schema"
-import { isCostCommand, isExitCommand, isNewCommand } from "./prompt.shared"
+import { isExitCommand, isNewCommand } from "./prompt.shared"
 import type { FooterApi, FooterEvent, FooterQueuedPrompt, RunPrompt } from "./types"
 
 type Trace = {
@@ -29,7 +29,6 @@ export type QueueInput = {
   trace?: Trace
   onSend?: (prompt: RunPrompt) => void
   onNewSession?: () => void | Promise<void>
-  onCost?: () => void | Promise<void>
   run: (prompt: RunPrompt, signal: AbortSignal) => Promise<void>
 }
 
@@ -126,14 +125,6 @@ export async function runPromptQueue(input: QueueInput): Promise<void> {
 
           const queued = state.queued.find((item) => item.prompt === prompt)
           if (queued) removeLocalQueued(queued)
-
-          if (prompt.mode !== "shell" && isCostCommand(prompt.text)) {
-            syncQueue()
-            if (input.onCost) {
-              await input.onCost()
-            }
-            continue
-          }
 
           if (prompt.mode !== "shell" && isNewCommand(prompt.text)) {
             syncQueue()
@@ -291,8 +282,7 @@ export async function runPromptQueue(input: QueueInput): Promise<void> {
       !active.command &&
       prompt.mode !== "shell" &&
       !prompt.command &&
-      !isNewCommand(prompt.text) &&
-      !isCostCommand(prompt.text)
+      !isNewCommand(prompt.text)
     ) {
       const queued: FooterQueuedPrompt = {
         messageID: MessageID.ascending(),
@@ -307,7 +297,7 @@ export async function runPromptQueue(input: QueueInput): Promise<void> {
 
     state.queue.push(prompt)
     syncQueue()
-    if (prompt.mode !== "shell" && (isNewCommand(prompt.text) || isCostCommand(prompt.text))) {
+    if (prompt.mode !== "shell" && isNewCommand(prompt.text)) {
       drain()
       return
     }

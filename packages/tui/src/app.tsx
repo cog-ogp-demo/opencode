@@ -82,6 +82,7 @@ import * as TuiAudio from "./audio"
 import { win32DisableProcessedInput, win32FlushInputBuffer } from "./terminal-win32"
 import { destroyRenderer } from "./util/renderer"
 import { cliErrorMessage, errorFormat } from "./util/error"
+import { Locale } from "./util/locale"
 
 const appGlobalBindingCommands = [
   "session.list",
@@ -576,6 +577,42 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
             type: "home",
           })
           dialog.clear()
+        },
+      },
+      {
+        name: "session.cost",
+        title: "Show session token usage and cost",
+        category: "Session",
+        slashName: "cost",
+        enabled: () => route.data.type === "session",
+        run: () => {
+          if (route.data.type !== "session") return
+          const session = sync.session.get(route.data.sessionID)
+          if (!session) {
+            toast.show({ message: "No active session", variant: "error" })
+            return
+          }
+          const tokens = session.tokens
+          const cost = session.cost ?? 0
+          if (!tokens && cost === 0) {
+            toast.show({ message: "No usage data yet", variant: "info" })
+            return
+          }
+          const lines: string[] = []
+          if (tokens) {
+            const total = tokens.input + tokens.output + tokens.reasoning + tokens.cache.read + tokens.cache.write
+            lines.push(`Tokens: ${Locale.number(total)}`)
+            lines.push(`  input: ${Locale.number(tokens.input)}`)
+            lines.push(`  output: ${Locale.number(tokens.output)}`)
+            if (tokens.reasoning > 0) lines.push(`  reasoning: ${Locale.number(tokens.reasoning)}`)
+            if (tokens.cache.read > 0) lines.push(`  cache read: ${Locale.number(tokens.cache.read)}`)
+            if (tokens.cache.write > 0) lines.push(`  cache write: ${Locale.number(tokens.cache.write)}`)
+          }
+          if (cost > 0) {
+            const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
+            lines.push(`Cost: ${fmt.format(cost)}`)
+          }
+          toast.show({ message: lines.join("\n"), variant: "info" })
         },
       },
       {
