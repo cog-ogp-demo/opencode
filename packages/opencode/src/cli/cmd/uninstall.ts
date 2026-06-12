@@ -1,6 +1,7 @@
 import type { Argv } from "yargs"
 import { UI } from "../ui"
 import * as prompts from "@clack/prompts"
+import { spinner } from "../spinner"
 import { Installation } from "../../installation"
 import { Global } from "@opencode-ai/core/global"
 import fs from "fs/promises"
@@ -142,7 +143,7 @@ async function showRemovalSummary(targets: RemovalTargets, method: Installation.
 }
 
 async function executeUninstall(method: Installation.Method, targets: RemovalTargets) {
-  const spinner = prompts.spinner()
+  const s = spinner()
   const errors: string[] = []
 
   for (const dir of targets.directories) {
@@ -157,24 +158,24 @@ async function executeUninstall(method: Installation.Method, targets: RemovalTar
       .catch(() => false)
     if (!exists) continue
 
-    spinner.start(`Removing ${dir.label}...`)
+    s.start(`Removing ${dir.label}...`)
     const err = await fs.rm(dir.path, { recursive: true, force: true }).catch((e) => e)
     if (err) {
-      spinner.stop(`Failed to remove ${dir.label}`, 1)
+      s.stop(`Failed to remove ${dir.label}`, 1)
       errors.push(`${dir.label}: ${err.message}`)
       continue
     }
-    spinner.stop(`Removed ${dir.label}`)
+    s.stop(`Removed ${dir.label}`)
   }
 
   if (targets.shellConfig) {
-    spinner.start("Cleaning shell config...")
+    s.start("Cleaning shell config...")
     const err = await cleanShellConfig(targets.shellConfig).catch((e) => e)
     if (err) {
-      spinner.stop("Failed to clean shell config", 1)
+      s.stop("Failed to clean shell config", 1)
       errors.push(`Shell config: ${err.message}`)
     } else {
-      spinner.stop("Cleaned shell config")
+      s.stop("Cleaned shell config")
     }
   }
 
@@ -191,12 +192,12 @@ async function executeUninstall(method: Installation.Method, targets: RemovalTar
 
     const cmd = cmds[method]
     if (cmd) {
-      spinner.start(`Running ${cmd.join(" ")}...`)
+      s.start(`Running ${cmd.join(" ")}...`)
       const result = await Process.run(method === "choco" ? ["choco", "uninstall", "opencode", "-y", "-r"] : cmd, {
         nothrow: true,
       })
       if (result.code !== 0) {
-        spinner.stop(`Package manager uninstall failed: exit code ${result.code}`, 1)
+        s.stop(`Package manager uninstall failed: exit code ${result.code}`, 1)
         const text = `${result.stdout.toString("utf8")}\n${result.stderr.toString("utf8")}`
         if (method === "choco" && text.includes("not running from an elevated command shell")) {
           prompts.log.warn(`You may need to run '${cmd.join(" ")}' from an elevated command shell`)
@@ -204,7 +205,7 @@ async function executeUninstall(method: Installation.Method, targets: RemovalTar
           prompts.log.warn(`You may need to run manually: ${cmd.join(" ")}`)
         }
       } else {
-        spinner.stop("Package removed")
+        s.stop("Package removed")
       }
     }
   }

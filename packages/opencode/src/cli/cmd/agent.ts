@@ -1,5 +1,6 @@
 import { cmd } from "./cmd"
 import * as prompts from "@clack/prompts"
+import { spinner } from "../spinner"
 import { UI } from "../ui"
 import { Global } from "@opencode-ai/core/global"
 import path from "path"
@@ -126,15 +127,15 @@ const AgentCreateCommand = effectCmd({
       }
 
       // Generate agent
-      const spinner = prompts.spinner()
-      spinner.start("Generating agent configuration...")
+      const s = spinner()
+      s.start("Generating agent configuration...")
       const model = args.model ? Provider.parseModel(args.model) : undefined
       const generated = await runLocalEffect(agentSvc.generate({ description, model })).catch((error) => {
-        spinner.stop(`LLM failed to generate agent: ${error.message}`, 1)
+        s.stop(`LLM failed to generate agent: ${error.message}`, 1)
         if (isFullyNonInteractive) process.exit(1)
         throw new UI.CancelledError()
       })
-      spinner.stop(`Agent ${generated.identifier} generated`)
+      s.stop(`Agent ${generated.identifier} generated`)
 
       // Select permissions to allow
       let selected: string[]
