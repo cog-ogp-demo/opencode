@@ -45,7 +45,15 @@ export type PlugCtx = {
 }
 
 const defaultPlugDeps: PlugDeps = {
-  spinner: () => spinner(),
+  // clack's spinner only skips its animation loop in CI; a plain non-TTY pipe still
+  // ticks and emits one line per frame, so fall back to a static start/stop shim there.
+  spinner: () =>
+    process.stdout.isTTY
+      ? spinner()
+      : {
+          start: (msg) => log.info(msg),
+          stop: (msg, code) => (code ? log.error(msg) : log.info(msg)),
+        },
   log: {
     error: (msg) => log.error(msg),
     info: (msg) => log.info(msg),
