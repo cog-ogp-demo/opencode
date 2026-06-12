@@ -40,6 +40,7 @@ import { DialogModel } from "./component/dialog-model"
 import { useConnected } from "./component/use-connected"
 import { DialogMcp } from "./component/dialog-mcp"
 import { DialogStatus } from "./component/dialog-status"
+import { DialogCost } from "./component/dialog-cost"
 import { DialogThemeList } from "./component/dialog-theme-list"
 import { DialogHelp } from "./ui/dialog-help"
 import { DialogAgent } from "./component/dialog-agent"
@@ -746,6 +747,19 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
             },
           ]
         : []),
+      {
+        name: "session.cost",
+        title: "View session cost",
+        category: "Session",
+        enabled: () => route.data.type === "session",
+        slashName: "cost",
+        slashAliases: ["usage", "tokens"],
+        run: () => {
+          if (route.data.type !== "session") return
+          const sessionID = route.data.sessionID
+          dialog.replace(() => <DialogCost sessionID={sessionID} />)
+        },
+      },
       {
         name: "opencode.status",
         title: "View status",
