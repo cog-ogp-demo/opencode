@@ -2,6 +2,7 @@ import path from "path"
 import { exec } from "child_process"
 import { Filesystem } from "@/util/filesystem"
 import * as prompts from "@clack/prompts"
+import { spinner } from "../spinner"
 import { map, pipe, sortBy, values } from "remeda"
 import { Octokit } from "@octokit/rest"
 import { graphql } from "@octokit/graphql"
@@ -276,7 +277,7 @@ export const githubInstall = Effect.fn("Cli.github.install")(function* () {
       }
 
       async function installGitHubApp() {
-        const s = prompts.spinner()
+        const s = spinner()
         s.start("Installing GitHub app")
 
         // Get installation

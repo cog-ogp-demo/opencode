@@ -6,6 +6,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { UnauthorizedError } from "@modelcontextprotocol/sdk/client/auth.js"
 import * as prompts from "@clack/prompts"
+import { spinner } from "../spinner"
 import { UI } from "../ui"
 import { MCP } from "../../mcp"
 import { McpAuth } from "../../mcp/auth"
@@ -254,8 +255,8 @@ export const McpAuthCommand = effectCmd({
       prompts.log.warn(`${serverName} has expired credentials. Re-authenticating...`)
     }
 
-    const spinner = prompts.spinner()
-    spinner.start("Starting OAuth flow...")
+    const s = spinner()
+    s.start("Starting OAuth flow...")
 
     // Subscribe to browser open failure events to show URL for manual opening
     const events = yield* EventV2Bridge.Service
@@ -263,10 +264,10 @@ export const McpAuthCommand = effectCmd({
       if (event.type !== MCP.BrowserOpenFailed.type) return Effect.void
       const data = event.data as EventV2.Data<typeof MCP.BrowserOpenFailed>
       if (data.mcpName === serverName) {
-        spinner.stop("Could not open browser automatically")
+        s.stop("Could not open browser automatically")
         prompts.log.warn("Please open this URL in your browser to authenticate:")
         prompts.log.info(data.url)
-        spinner.start("Waiting for authorization...")
+        s.start("Waiting for authorization...")
       }
       return Effect.void
     })
@@ -275,9 +276,9 @@ export const McpAuthCommand = effectCmd({
       Effect.tap((status) =>
         Effect.sync(() => {
           if (status.status === "connected") {
-            spinner.stop("Authentication successful!")
+            s.stop("Authentication successful!")
           } else if (status.status === "needs_client_registration") {
-            spinner.stop("Authentication failed", 1)
+            s.stop("Authentication failed", 1)
             prompts.log.error(status.error)
             prompts.log.info("Add clientId to your MCP server config:")
             prompts.log.info(`
@@ -292,16 +293,16 @@ export const McpAuthCommand = effectCmd({
     }
   }`)
           } else if (status.status === "failed") {
-            spinner.stop("Authentication failed", 1)
+            s.stop("Authentication failed", 1)
             prompts.log.error(status.error)
           } else {
-            spinner.stop("Unexpected status: " + status.status, 1)
+            s.stop("Unexpected status: " + status.status, 1)
           }
         }),
       ),
       Effect.catchCause((cause) =>
         Effect.sync(() => {
-          spinner.stop("Authentication failed", 1)
+          s.stop("Authentication failed", 1)
           const error = Cause.squash(cause)
           prompts.log.error(error instanceof Error ? error.message : String(error))
         }),
@@ -736,8 +737,8 @@ export const McpDebugCommand = effectCmd({
         }
       }
 
-      const spinner = prompts.spinner()
-      spinner.start("Testing connection...")
+      const dbgSpinner = spinner()
+      dbgSpinner.start("Testing connection...")
 
       // Test basic HTTP connectivity first
       try {
@@ -760,7 +761,7 @@ export const McpDebugCommand = effectCmd({
           }),
         })
 
-        spinner.stop(`HTTP response: ${response.status} ${response.statusText}`)
+        dbgSpinner.stop(`HTTP response: ${response.status} ${response.statusText}`)
 
         // Check for WWW-Authenticate header
         const wwwAuth = response.headers.get("www-authenticate")
@@ -838,7 +839,7 @@ export const McpDebugCommand = effectCmd({
           }
         }
       } catch (error) {
-        spinner.stop("Connection failed", 1)
+        dbgSpinner.stop("Connection failed", 1)
         prompts.log.error(`Error: ${error instanceof Error ? error.message : String(error)}`)
       }
 
