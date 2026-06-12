@@ -881,6 +881,7 @@ function DraftTabItem(props: {
   onNavigate: () => void
   onClose: () => void
 }) {
+  const language = useLanguage()
   const closeTab = (event: MouseEvent) => {
     event.preventDefault()
     event.stopPropagation()
@@ -919,7 +920,7 @@ function DraftTabItem(props: {
           }}
           onClick={closeTab}
           icon={<IconV2 name="xmark-small" />}
-          aria-label="Close tab"
+          aria-label={language.t("common.closeTab")}
         />
       </div>
     </div>
@@ -927,6 +928,7 @@ function DraftTabItem(props: {
 }
 
 function NewSessionTabItem(props: { ref?: HTMLDivElement; href: string; title: string; onClose: () => void }) {
+  const language = useLanguage()
   const closeTab = (event: MouseEvent) => {
     event.preventDefault()
     event.stopPropagation()
@@ -961,7 +963,7 @@ function NewSessionTabItem(props: { ref?: HTMLDivElement; href: string; title: s
           }}
           onClick={closeTab}
           icon={<IconV2 name="xmark-small" />}
-          aria-label="Close tab"
+          aria-label={language.t("common.closeTab")}
         />
       </div>
     </div>
