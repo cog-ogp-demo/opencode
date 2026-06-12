@@ -44,8 +44,19 @@ export type PlugCtx = {
   directory: string
 }
 
+function staticSpinner(): Spin {
+  return {
+    start(msg) {
+      process.stderr.write(`- ${msg}\n`)
+    },
+    stop(msg, code) {
+      process.stderr.write(`${code ? "✖" : "✔"} ${msg}\n`)
+    },
+  }
+}
+
 const defaultPlugDeps: PlugDeps = {
-  spinner: () => spinner(),
+  spinner: () => (process.stdout.isTTY ? spinner() : staticSpinner()),
   log: {
     error: (msg) => log.error(msg),
     info: (msg) => log.info(msg),
