@@ -4,21 +4,55 @@ import { useTerminalDimensions } from "@opentui/solid"
 import type { MouseEvent } from "@opentui/core"
 import { useTheme } from "../context/theme"
 
-// A playful overlay of little ASCII pets that wander the terminal, inspired by
-// the Codex pets easter egg. Each pet walks toward a random spot, idles for a
-// beat, then moves on. Click a pet to make it hop. Disable with
-// OPENCODE_DISABLE_PETS.
+// A playful overlay of little ASCII-art pets that wander the terminal, inspired
+// by the Codex pets easter egg. Each pet is drawn over a few rows, walks toward
+// a random spot with an alternating-leg gait, idles for a beat, then moves on.
+// Click a pet to make it hop. Disable with OPENCODE_DISABLE_PETS.
 
-const WIDTH = 7
-const TICK = 130
-const HOP = "\\(^o^)/"
+const TICK = 140
+const HOP_TICKS = 5
 
 const SPECIES = [
-  { right: "(>^.^)>", left: "<(^.^<)", color: "accent" },
-  { right: "(>owo)>", left: "<(owo<)", color: "primary" },
-  { right: "(>~o~)>", left: "<(~o~<)", color: "success" },
-  { right: "(>'x')>", left: "<('x'<)", color: "warning" },
+  {
+    // cat
+    color: "accent",
+    walk: [
+      [" /\\_/\\", "( o.o )", "  u u"],
+      [" /\\_/\\", "( o.o )", " u   u"],
+    ],
+    hop: [" /\\_/\\", "(\\^o^/)", "  U U"],
+  },
+  {
+    // dog
+    color: "primary",
+    walk: [
+      [" /^ ^\\", "( o.o )", "  U U"],
+      [" /^ ^\\", "( o.o )", " U   U"],
+    ],
+    hop: [" /^ ^\\", "(\\^o^/)", "  U U"],
+  },
+  {
+    // dragon
+    color: "success",
+    walk: [
+      [" //^\\\\", "( o.o )", " /| |\\"],
+      [" //^\\\\", "( o.o )", " \\| |/"],
+    ],
+    hop: [" \\\\^//", "(\\o o/)", "  ^ ^"],
+  },
+  {
+    // bunny
+    color: "warning",
+    walk: [
+      [" (\\_/)", "( o.o )", "  u u"],
+      [" (\\_/)", "( o.o )", " u   u"],
+    ],
+    hop: [" (\\_/)", "(\\^-^/)", "  u u"],
+  },
 ] as const
+
+const SPRITE_W = 7
+const SPRITE_H = 3
 
 interface Pet {
   species: number
@@ -26,7 +60,7 @@ interface Pet {
   y: number
   targetX: number
   targetY: number
-  facing: number
+  step: number
   idle: number
   hop: number
 }
@@ -35,20 +69,25 @@ function sign(value: number) {
   return value > 0 ? 1 : value < 0 ? -1 : 0
 }
 
+function leading(line: string) {
+  return line.length - line.trimStart().length
+}
+
 export function Pets() {
   const { theme } = useTheme()
   const dimensions = useTerminalDimensions()
 
   const bounds = () => ({
-    maxX: Math.max(1, dimensions().width - WIDTH - 1),
+    minX: 1,
+    maxX: Math.max(2, dimensions().width - SPRITE_W - 1),
     minY: 1,
-    maxY: Math.max(2, dimensions().height - 2),
+    maxY: Math.max(2, dimensions().height - SPRITE_H - 1),
   })
 
   function randomTarget() {
     const b = bounds()
     return {
-      x: Math.floor(Math.random() * b.maxX) + 1,
+      x: Math.floor(Math.random() * (b.maxX - b.minX)) + b.minX,
       y: Math.floor(Math.random() * (b.maxY - b.minY)) + b.minY,
     }
   }
@@ -63,8 +102,8 @@ export function Pets() {
         y: start.y,
         targetX: target.x,
         targetY: target.y,
-        facing: target.x >= start.x ? 1 : -1,
-        idle: Math.floor(Math.random() * 8),
+        step: 0,
+        idle: Math.floor(Math.random() * 10),
         hop: 0,
       }
     }),
@@ -86,16 +125,14 @@ export function Pets() {
 
       if (pet.x === pet.targetX && pet.y === pet.targetY) {
         const next = randomTarget()
-        setPets(i, { targetX: next.x, targetY: next.y, idle: Math.floor(Math.random() * 10) + 3 })
+        setPets(i, { targetX: next.x, targetY: next.y, idle: Math.floor(Math.random() * 12) + 4 })
         continue
       }
 
-      const dx = sign(pet.targetX - pet.x)
-      const dy = sign(pet.targetY - pet.y)
       setPets(i, {
-        x: pet.x + dx,
-        y: pet.y + dy,
-        facing: dx !== 0 ? dx : pet.facing,
+        x: pet.x + sign(pet.targetX - pet.x),
+        y: pet.y + sign(pet.targetY - pet.y),
+        step: pet.step ^ 1,
       })
     }
   }
@@ -108,34 +145,41 @@ export function Pets() {
 
   const hop = (index: number) => {
     if (pets[index].hop > 0) return
-    setPets(index, "hop", 4)
+    setPets(index, "hop", HOP_TICKS)
   }
 
   return (
     <For each={pets}>
       {(pet, index) => {
-        const sprite = () => SPECIES[pet.species]
-        const glyph = () => (pet.hop > 0 ? HOP : pet.facing >= 0 ? sprite().right : sprite().left)
-        const color = () => theme[sprite().color]
-        const row = () => Math.max(0, pet.hop > 0 ? pet.y - 1 : pet.y)
+        const frame = () => {
+          const species = SPECIES[pet.species]
+          if (pet.hop > 0) return species.hop
+          return species.walk[pet.idle > 0 ? 0 : pet.step]
+        }
+        const color = () => theme[SPECIES[pet.species].color]
         return (
-          <box
-            position="absolute"
-            left={pet.x}
-            top={row()}
-            width={WIDTH}
-            height={1}
-            zIndex={60}
-            onMouseDown={(evt: MouseEvent) => {
-              evt.preventDefault()
-              evt.stopPropagation()
-              hop(index())
+          <For each={[0, 1, 2]}>
+            {(rowIndex) => {
+              const line = () => frame()[rowIndex] ?? ""
+              return (
+                <box
+                  position="absolute"
+                  left={pet.x + leading(line())}
+                  top={(pet.hop > 0 ? pet.y - 1 : pet.y) + rowIndex}
+                  zIndex={60}
+                  onMouseDown={(evt: MouseEvent) => {
+                    evt.preventDefault()
+                    evt.stopPropagation()
+                    hop(index())
+                  }}
+                >
+                  <text fg={color()} selectable={false}>
+                    {line().trim()}
+                  </text>
+                </box>
+              )
             }}
-          >
-            <text fg={color()} selectable={false}>
-              {glyph()}
-            </text>
-          </box>
+          </For>
         )
       }}
     </For>
