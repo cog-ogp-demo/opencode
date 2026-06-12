@@ -98,4 +98,5 @@ describe("run prompt shared", () => {
     expect(isNewCommand(" /NEW ")).toBe(true)
     expect(isNewCommand("/new now")).toBe(false)
   })
+
 })
