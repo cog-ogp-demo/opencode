@@ -45,7 +45,13 @@ export type PlugCtx = {
 }
 
 const defaultPlugDeps: PlugDeps = {
-  spinner: () => spinner(),
+  spinner: () => {
+    if (process.stdout.isTTY) return spinner()
+    return {
+      start: (msg) => log.info(msg),
+      stop: (msg, code) => (code ? log.error(msg) : log.success(msg)),
+    }
+  },
   log: {
     error: (msg) => log.error(msg),
     info: (msg) => log.info(msg),
