@@ -65,11 +65,20 @@ export const StatsCommand = effectCmd({
       .option("project", {
         describe: "filter by project (default: all projects, empty string: current project)",
         type: "string",
+      })
+      .option("json", {
+        describe: "output stats as JSON",
+        type: "boolean",
+        default: false,
       }),
   handler: Effect.fn("Cli.stats")(function* (args) {
     const ctx = yield* InstanceRef
     if (!ctx) return
     const stats = yield* aggregateSessionStats(args.days, args.project, ctx.project)
+    if (args.json) {
+      process.stdout.write(JSON.stringify(stats, null, 2) + "\n")
+      return
+    }
     let modelLimit: number | undefined
     if (args.models === true) {
       modelLimit = Infinity
