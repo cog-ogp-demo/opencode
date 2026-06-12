@@ -92,14 +92,21 @@ export function createInlineEditorController() {
               if (!el.isConnected) return
               el.focus()
             })
+            // Use native listeners so stopPropagation fires before the event
+            // leaves the element.  SolidJS-delegated onKeyDown runs at the
+            // document level — too late to prevent parent buttons from
+            // treating Space as an activation key.
+            el.addEventListener("keydown", (event) => {
+              event.stopPropagation()
+              editorKeyDown(event, props.onSave)
+            })
+            el.addEventListener("keyup", (event) => {
+              event.stopPropagation()
+            })
           }}
           value={editorValue()}
           class={props.class}
           onInput={(event) => setEditor("value", event.currentTarget.value)}
-          onKeyDown={(event) => {
-            event.stopPropagation()
-            editorKeyDown(event, props.onSave)
-          }}
           onBlur={closeEditor}
           onPointerDown={stopPropagation}
           onClick={stopPropagation}

@@ -150,12 +150,20 @@ export function SortableTerminalTab(props: { terminal: LocalPTY; onClose?: () =>
         <Show when={store.editing}>
           <div class="absolute inset-0 flex items-center px-3 bg-muted z-10 pointer-events-auto">
             <input
-              ref={input}
+              ref={(el) => {
+                input = el
+                el.addEventListener("keydown", (event) => {
+                  event.stopPropagation()
+                  keydown(event)
+                })
+                el.addEventListener("keyup", (event) => {
+                  event.stopPropagation()
+                })
+              }}
               type="text"
               value={store.title}
               onInput={(e) => setStore("title", e.currentTarget.value)}
               onBlur={save}
-              onKeyDown={keydown}
               onMouseDown={(e) => e.stopPropagation()}
               class="bg-transparent border-none outline-none text-sm min-w-0 flex-1"
             />
