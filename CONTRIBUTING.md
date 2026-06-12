@@ -112,14 +112,22 @@ bun dev serve --port 8080
 
 To test UI changes during development:
 
-1. **First, start the OpenCode server** (see [Running the API Server](#running-the-api-server) section above)
-2. **Then run the web app:**
+1. **First, start the OpenCode server** (see [Running the API Server](#running-the-api-server) section above):
+
+```bash
+bun dev serve --port 4096
+```
+
+2. **Then, in a separate terminal, run the web app:**
 
 ```bash
 bun run --cwd packages/app dev
 ```
 
-This starts a local dev server at http://localhost:5173 (or similar port shown in output). Most UI changes can be tested here, but the server must be running for full functionality.
+This starts a Vite dev server at http://localhost:3000 (it targets the API server at http://localhost:4096). Most UI changes can be tested here, but the API server must be running for full functionality.
+
+> [!NOTE]
+> `bun dev web` proxies https://app.opencode.ai, so local UI changes will not show there. For local UI changes, run the API server and the app dev server separately as described above.
 
 ### Running the Desktop App
 
